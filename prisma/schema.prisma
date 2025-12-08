@@ -1,0 +1,99 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = "postgresql://postgres:root@localhost:5432/ticket_aggregator"
+}
+
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  name      String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  integrations Integration[]
+  tickets      Ticket[]
+}
+
+model Integration {
+  id           String   @id @default(cuid())
+  userId       String
+  platform     String   // jira, github, gitlab, azure-devops, bitbucket
+  name         String   // User-friendly name for this integration
+  token        String   // Encrypted token
+  baseUrl      String?  // For self-hosted instances
+  username     String?  // For some platforms that need it
+  isActive     Boolean  @default(true)
+  lastSyncedAt DateTime?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  
+  user    User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tickets Ticket[]
+  
+  @@unique([userId, platform, name])
+  @@index([userId])
+}
+
+model Ticket {
+  id             String   @id @default(cuid())
+  userId         String
+  integrationId  String
+  externalId     String   // ID from the external system
+  platform       String   // jira, github, gitlab, azure-devops, bitbucket
+  title          String
+  description    String?
+  status         String
+  priority       String?
+  type           String?  // bug, feature, task, etc.
+  assignee       String?
+  reporter       String?
+  projectKey     String?
+  projectName    String?
+  labels         String?  // JSON array stored as string
+  url            String?
+  createdAt      DateTime
+  updatedAt      DateTime
+  dueDate        DateTime?
+  syncedAt       DateTime @default(now())
+  
+  // Time tracking fields
+  estimatedHours  Float?   @default(0)
+  loggedHours     Float?   @default(0)
+  remainingHours  Float?   @default(0)
+  sprint          String?
+  storyPoints     Int?
+  ticketId        String?  // Display ticket ID (e.g., PROJ-123)
+  
+  user        User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  integration Integration @relation(fields: [integrationId], references: [id], onDelete: Cascade)
+  timeEntries TimeEntry[]
+  
+  @@unique([integrationId, externalId])
+  @@index([userId])
+  @@index([integrationId])
+  @@index([status])
+  @@index([sprint])
+}
+
+model TimeEntry {
+  id          String   @id @default(cuid())
+  ticketId    String
+  ticket      Ticket   @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+  date        DateTime @default(now())
+  hours       Float
+  description String?
+  userId      String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  @@index([ticketId])
+  @@index([userId])
+  @@index([date])
+}
