@@ -6,11 +6,25 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url)
     const email = searchParams.get('email')
 
+    // If no email, return all users for dropdown/selection
     if (!email) {
-      return NextResponse.json(
-        { error: 'Email is required' },
-        { status: 400 }
-      )
+      const users = await prisma.user.findMany({
+        orderBy: {
+          createdAt: 'desc',
+        },
+        select: {
+          id: true,
+          email: true,
+          name: true,
+          displayName: true,
+          jobTitle: true,
+          department: true,
+          officeLocation: true,
+          resourceType: true,
+        },
+      })
+      
+      return NextResponse.json({ users })
     }
 
     // Get or create user
