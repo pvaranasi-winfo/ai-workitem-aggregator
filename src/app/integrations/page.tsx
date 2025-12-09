@@ -8,8 +8,9 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { IntegrationCard } from '@/components/integration-card'
 import { AddIntegrationDialog } from '@/components/add-integration-dialog'
 import { ArrowLeft, Plus } from 'lucide-react'
-import Link from 'next/link'
 import { toast } from 'sonner'
+import { Navbar } from '@/components/navbar'
+import { Footer } from '@/components/footer'
 
 export default function IntegrationsPage() {
   const [email, setEmail] = useState('')
@@ -74,69 +75,65 @@ export default function IntegrationsPage() {
 
   const integrations = data?.integrations || []
 
+  const handleLogout = () => {
+    localStorage.removeItem('userEmail')
+    router.push('/')
+  }
+
   if (!email) return null
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <header className="bg-white border-b">
-        <div className="container mx-auto px-4 py-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
-              <Link href="/dashboard">
-                <Button variant="ghost" size="sm">
-                  <ArrowLeft className="h-4 w-4 mr-2" />
-                  Back to Dashboard
-                </Button>
-              </Link>
-              <div>
-                <h1 className="text-2xl font-bold">Integrations</h1>
-                <p className="text-sm text-muted-foreground">Manage your connected platforms</p>
-              </div>
-            </div>
+    <div className="min-h-screen flex flex-col">
+      <Navbar email={email} onLogout={handleLogout} />
+      <div className="flex-1 bg-gradient-to-br from-gray-50 to-gray-100">
+        <div className="container mx-auto px-4 py-8">
+          <div className="mb-8">
+            <h1 className="text-2xl font-bold">Integrations</h1>
+            <p className="text-sm text-muted-foreground">Manage your connected platforms</p>
+          </div>
+          <div className="mb-4">
             <Button onClick={() => setShowAddDialog(true)}>
               <Plus className="h-4 w-4 mr-2" />
               Add Integration
             </Button>
           </div>
-        </div>
-      </header>
 
-      <div className="container mx-auto px-4 py-8">
-        {isLoading ? (
-          <div className="text-center py-12">
-            <p className="text-muted-foreground">Loading integrations...</p>
-          </div>
-        ) : integrations.length === 0 ? (
-          <Card>
-            <CardContent className="py-12 text-center">
-              <div className="max-w-md mx-auto">
-                <h3 className="text-lg font-semibold mb-2">No Integrations Yet</h3>
-                <p className="text-muted-foreground mb-6">
-                  Connect your first platform to start aggregating your tickets
-                </p>
-                <Button onClick={() => setShowAddDialog(true)} size="lg">
-                  <Plus className="h-4 w-4 mr-2" />
-                  Add Your First Integration
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-        ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {integrations.map((integration: any) => (
-              <IntegrationCard
-                key={integration.id}
-                integration={integration}
-                onToggle={(id, isActive) => toggleMutation.mutate({ id, isActive })}
-                onDelete={(id) => {
-                  if (confirm('Are you sure you want to delete this integration?')) {
-                    deleteMutation.mutate(id)
-                  }
-                }}
-              />
-            ))}
-          </div>
-        )}
+          {isLoading ? (
+            <div className="text-center py-12">
+              <p className="text-muted-foreground">Loading integrations...</p>
+            </div>
+          ) : integrations.length === 0 ? (
+            <Card>
+              <CardContent className="py-12 text-center">
+                <div className="max-w-md mx-auto">
+                  <h3 className="text-lg font-semibold mb-2">No Integrations Yet</h3>
+                  <p className="text-muted-foreground mb-6">
+                    Connect your first platform to start aggregating your tickets
+                  </p>
+                  <Button onClick={() => setShowAddDialog(true)} size="lg">
+                    <Plus className="h-4 w-4 mr-2" />
+                    Add Your First Integration
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {integrations.map((integration: any) => (
+                <IntegrationCard
+                  key={integration.id}
+                  integration={integration}
+                  onToggle={(id, isActive) => toggleMutation.mutate({ id, isActive })}
+                  onDelete={(id) => {
+                    if (confirm('Are you sure you want to delete this integration?')) {
+                      deleteMutation.mutate(id)
+                    }
+                  }}
+                />
+              ))}
+            </div>
+          )}
+        </div>
       </div>
 
       <AddIntegrationDialog
@@ -148,6 +145,7 @@ export default function IntegrationsPage() {
         }}
         userEmail={email}
       />
+      <Footer />
     </div>
   )
 }

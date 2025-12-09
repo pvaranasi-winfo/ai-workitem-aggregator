@@ -17,7 +17,8 @@ import { CalendarIcon, Clock, Save, Plus, Trash2, AlertCircle, CheckCircle2, Sea
 import { format, isAfter, isBefore, startOfDay, endOfDay } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
-import Link from 'next/link';
+import { Navbar } from '@/components/navbar';
+import { Footer } from '@/components/footer';
 
 interface TimeEntry {
   id?: string;
@@ -241,32 +242,20 @@ export default function TimesheetPage() {
 
   const totalHours = timeEntries.reduce((sum, entry) => sum + (entry.hours || 0), 0);
 
+  const handleLogout = () => {
+    localStorage.removeItem('userEmail');
+    router.push('/');
+  };
+
   if (!email) return null;
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-purple-50 to-pink-50">
-      {/* Header */}
-      <header className="bg-white/80 backdrop-blur-sm border-b sticky top-0 z-10 shadow-sm">
-        <div className="container mx-auto px-4 py-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-2xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">
-                Daily Timesheet
-              </h1>
-              <p className="text-sm text-muted-foreground">{email}</p>
-            </div>
-            <div className="flex gap-2">
-              <Link href="/dashboard">
-                <Button variant="outline">Back to Dashboard</Button>
-              </Link>
-            </div>
-          </div>
-        </div>
-      </header>
-
-      <div className="container mx-auto px-4 py-8">
-        {/* Date Selection */}
-        <Card className="mb-6">
+    <div className="min-h-screen flex flex-col">
+      <Navbar email={email} onLogout={handleLogout} />
+      <div className="flex-1 bg-gradient-to-br from-slate-50 via-purple-50 to-pink-50">
+        <div className="container mx-auto px-4 py-8">
+          {/* Date Selection */}
+          <Card className="mb-6">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <CalendarIcon className="h-5 w-5 text-purple-600" />
@@ -635,6 +624,8 @@ export default function TimesheetPage() {
           </DialogContent>
         </Dialog>
       </div>
+      </div>
+      <Footer />
     </div>
   );
 }

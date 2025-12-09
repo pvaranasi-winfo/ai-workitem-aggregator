@@ -17,8 +17,20 @@ model User {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
   
+  // Microsoft Entra ID fields
+  entraId        String?  @unique
+  displayName    String?
+  jobTitle       String?
+  department     String?
+  officeLocation String?
+  
+  // Resource tagging
+  resourceType   String?  // "Dedicated", "Shared", "Unassigned"
+  
   integrations Integration[]
   tickets      Ticket[]
+  userProjects UserProject[]
+  leaves       Leave[]
 }
 
 model Integration {
@@ -96,4 +108,73 @@ model TimeEntry {
   @@index([ticketId])
   @@index([userId])
   @@index([date])
+}
+
+model Project {
+  id          String   @id @default(cuid())
+  title       String
+  description String?
+  capacity    Float?   // Team capacity in hours/week
+  location    String?  // Office location or remote
+  status      String   @default("Active") // Active, Inactive, Archived
+  startDate   DateTime?
+  endDate     DateTime?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  userProjects UserProject[]
+  
+  @@index([status])
+}
+
+model UserProject {
+  id              String   @id @default(cuid())
+  userId          String
+  projectId       String
+  role            String?  // Developer, Lead, Manager, etc.
+  allocationPercentage Float? @default(100) // Percentage of time allocated
+  startDate       DateTime?
+  endDate         DateTime?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  
+  @@unique([userId, projectId])
+  @@index([userId])
+  @@index([projectId])
+}
+
+model EntraConfig {
+  id           String   @id @default(cuid())
+  tenantId     String
+  clientId     String
+  clientSecret String   // Encrypted
+  isEnabled    Boolean  @default(false)
+  syncInterval Int      @default(24) // Hours between syncs
+  lastSyncedAt DateTime?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}
+
+model Leave {
+  id          String   @id @default(cuid())
+  userId      String
+  leaveType   String   // Annual, Sick, Personal, etc.
+  startDate   DateTime
+  endDate     DateTime
+  days        Float    // Number of days (can be 0.5 for half day)
+  status      String   @default("Approved") // Approved, Pending, Rejected
+  reason      String?
+  source      String?  // jira, azure-devops, manual, etc.
+  externalId  String?  // ID from external system
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  @@index([userId])
+  @@index([startDate])
+  @@index([endDate])
 }

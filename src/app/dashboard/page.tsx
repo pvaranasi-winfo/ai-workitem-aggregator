@@ -11,12 +11,13 @@ import { AddIntegrationDialog } from '@/components/add-integration-dialog';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
+import { Navbar } from '@/components/navbar';
+import { Footer } from '@/components/footer';
 import { 
-  RefreshCw, Plus, Settings, LogOut, Search, 
+  RefreshCw, Plus, Settings, Search, 
   CheckCircle2, Clock, Target, Timer, BarChart3, 
-  ExternalLink, TrendingUp, Calendar, Zap, AlertCircle 
+  ExternalLink, TrendingUp, Calendar, Zap, AlertCircle, Building2, Users
 } from 'lucide-react';
-import Link from 'next/link';
 import { toast } from 'sonner';
 
 export default function DashboardPage() {
@@ -151,54 +152,32 @@ export default function DashboardPage() {
   if (!email) return null;
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
-      {/* Header */}
-      <header className="bg-white/80 backdrop-blur-sm border-b sticky top-0 z-10 shadow-sm">
-        <div className="container mx-auto px-4 py-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
-                Ticket Aggregator Dashboard
-              </h1>
-              <p className="text-sm text-muted-foreground">{email}</p>
-            </div>
-            <div className="flex items-center gap-2">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => syncMutation.mutate()}
-                disabled={syncMutation.isPending}
-                className="gap-2"
-              >
-                <RefreshCw className={`h-4 w-4 ${syncMutation.isPending ? 'animate-spin' : ''}`} />
-                Sync
-              </Button>
-              <Link href="/timesheet">
-                <Button variant="outline" size="sm" className="gap-2">
-                  <Timer className="h-4 w-4" />
-                  Timesheet
-                </Button>
-              </Link>
-              <Button variant="outline" size="sm" onClick={() => setShowAddDialog(true)} className="gap-2">
-                <Plus className="h-4 w-4" />
-                Add
-              </Button>
-              <Link href="/integrations">
-                <Button variant="outline" size="sm" className="gap-2">
-                  <Settings className="h-4 w-4" />
-                  Settings
-                </Button>
-              </Link>
-              <Button variant="ghost" size="sm" onClick={handleLogout} className="gap-2">
-                <LogOut className="h-4 w-4" />
-                Logout
-              </Button>
-            </div>
-          </div>
-        </div>
-      </header>
+    <div className="min-h-screen flex flex-col">
+      <Navbar 
+        email={email} 
+        onLogout={handleLogout}
+        actions={
+          <>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => syncMutation.mutate()}
+              disabled={syncMutation.isPending}
+              className="gap-1.5"
+            >
+              <RefreshCw className={`h-4 w-4 ${syncMutation.isPending ? 'animate-spin' : ''}`} />
+              <span className="hidden sm:inline">Sync</span>
+            </Button>
+            <Button variant="outline" size="sm" onClick={() => setShowAddDialog(true)} className="gap-1.5">
+              <Plus className="h-4 w-4" />
+              <span className="hidden sm:inline">Add</span>
+            </Button>
+          </>
+        }
+      />
 
-      <div className="container mx-auto px-4 py-8">
+      <div className="flex-1 bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
+        <div className="container mx-auto px-4 py-8">
         {/* Comprehensive Stats Cards */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
           <Card className="bg-gradient-to-br from-blue-50 to-indigo-50 border-blue-200 hover:shadow-lg transition-shadow">
@@ -731,6 +710,7 @@ export default function DashboardPage() {
           </TabsContent>
         </Tabs>
       </div>
+      </div>
 
       <AddIntegrationDialog
         open={showAddDialog}
@@ -741,6 +721,8 @@ export default function DashboardPage() {
         }}
         userEmail={email}
       />
+
+      <Footer />
     </div>
   );
 }
