@@ -45,7 +45,7 @@ export interface User {
   name?: string
 }
 
-export type Platform = 'jira' | 'github' | 'gitlab' | 'azure-devops' | 'bitbucket'
+export type Platform = 'jira' | 'github' | 'gitlab' | 'azure-devops' | 'bitbucket' | 'kantata'
 
 export interface PlatformConfig {
   name: string
@@ -84,4 +84,37 @@ export interface SyncResult {
   success: boolean
   ticketCount: number
   error?: string
+}
+
+export interface KantataTokens {
+  access_token: string
+  refresh_token?: string
+  token_type: string
+  expires_in?: number
+}
+
+export interface KantataWorkspace {
+  id: string
+  title: string
+  description?: string
+  archived_at?: string
+  project_tracker_template_id?: string
+}
+
+export interface KantataTimeEntry {
+  id: string
+  date_performed: string
+  time_in_minutes: number
+  notes?: string
+  workspace_id?: string
+  story_id?: string
+}
+
+export interface KantataTask {
+  id: string
+  title: string
+  description?: string
+  story_type: string
+  state: string
+  workspace_id?: string
 }

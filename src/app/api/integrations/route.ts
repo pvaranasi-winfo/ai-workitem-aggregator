@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/db'
 import { encrypt, decrypt } from '@/lib/crypto'
 import { testPlatformConnection } from '@/lib/integrations'
+import { KantataIntegration } from '@/lib/integrations/kantata'
 
 export async function GET(request: NextRequest) {
   try {
@@ -54,7 +55,19 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
-    const { email, platform, name, token, baseUrl, username } = body
+    const { 
+      email, 
+      platform, 
+      name, 
+      token, 
+      baseUrl, 
+      username,
+      refreshToken,
+      clientId,
+      clientSecret,
+      subdomain,
+      redirectUri
+    } = body
 
     if (!email || !platform || !name || !token) {
       return NextResponse.json(
@@ -63,14 +76,29 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Test connection first
-    const isValid = await testPlatformConnection(platform, token, baseUrl, username)
-    
-    if (!isValid) {
-      return NextResponse.json(
-        { error: 'Failed to connect to platform. Please check your credentials.' },
-        { status: 400 }
-      )
+    // For non-Kantata platforms, test connection first
+    // For Kantata, we'll test with personal access token
+    if (platform === 'kantata') {
+      const kantata = new KantataIntegration({
+        subdomain: body.subdomain,
+        accessToken: token,
+      })
+      const testResult = await kantata.testConnection()
+      if (!testResult.success) {
+        return NextResponse.json(
+          { error: `Failed to connect to Kantata: ${testResult.error}` },
+          { status: 400 }
+        )
+      }
+    } else {
+      const isValid = await testPlatformConnection(platform, token, baseUrl, username)
+      
+      if (!isValid) {
+        return NextResponse.json(
+          { error: 'Failed to connect to platform. Please check your credentials.' },
+          { status: 400 }
+        )
+      }
     }
 
     // Get or create user
@@ -84,19 +112,27 @@ export async function POST(request: NextRequest) {
       })
     }
 
-    // Encrypt token
+    // Encrypt sensitive data
     const encryptedToken = encrypt(token)
+
+    // Prepare integration data
+    const integrationData: any = {
+      userId: user.id,
+      platform,
+      name,
+      token: encryptedToken,
+      baseUrl,
+      username,
+    }
+
+    // Add Kantata-specific fields if present
+    if (platform === 'kantata') {
+      integrationData.baseUrl = `https://${body.subdomain}.mavenlink.com`
+    }
 
     // Create integration
     const integration = await prisma.integration.create({
-      data: {
-        userId: user.id,
-        platform,
-        name,
-        token: encryptedToken,
-        baseUrl,
-        username,
-      },
+      data: integrationData,
       select: {
         id: true,
         platform: true,
