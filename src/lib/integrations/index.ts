@@ -4,6 +4,7 @@ import { GitHubClient } from './github'
 import { GitLabClient } from './gitlab'
 import { AzureDevOpsClient } from './azure-devops'
 import { BitbucketClient } from './bitbucket'
+import { KantataIntegration } from './kantata'
 
 export async function fetchTicketsFromPlatform(
   platform: string,
@@ -42,6 +43,11 @@ export async function fetchTicketsFromPlatform(
       const bitbucketClient = new BitbucketClient(username, token)
       return await bitbucketClient.getAssignedIssues()
 
+    case 'kantata':
+      // Kantata tickets are handled separately due to OAuth flow
+      // This should be called from a separate endpoint after OAuth setup
+      throw new Error('Kantata integration requires separate OAuth setup')
+
     default:
       throw new Error(`Unsupported platform: ${platform}`)
   }
@@ -77,6 +83,10 @@ export async function testPlatformConnection(
         if (!username) return false
         const bitbucketClient = new BitbucketClient(username, token)
         return await bitbucketClient.testConnection()
+
+      case 'kantata':
+        // Kantata connection testing is handled during OAuth flow
+        return true
 
       default:
         return false

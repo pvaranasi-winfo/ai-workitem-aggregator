@@ -6,8 +6,8 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
-  url      = "postgresql://postgres:root@localhost:5432/ticket_aggregator"
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
 }
 
 model User {
@@ -43,11 +43,12 @@ model User {
 model Integration {
   id           String   @id @default(cuid())
   userId       String
-  platform     String   // jira, github, gitlab, azure-devops, bitbucket
+  platform     String   // jira, github, gitlab, azure-devops, bitbucket, kantata
   name         String   // User-friendly name for this integration
   token        String   // Encrypted token
   baseUrl      String?  // For self-hosted instances
   username     String?  // For some platforms that need it
+  metadata     String?  // JSON string for platform-specific data (e.g., Kantata OAuth data)
   isActive     Boolean  @default(true)
   lastSyncedAt DateTime?
   createdAt    DateTime @default(now())

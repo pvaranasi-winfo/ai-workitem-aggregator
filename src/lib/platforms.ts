@@ -151,6 +151,36 @@ export const PLATFORM_CONFIGS: Record<string, PlatformConfig> = {
       },
     ],
   },
+  kantata: {
+    name: 'Kantata',
+    description: 'Connect to Kantata to fetch workspaces, tasks, and time entries',
+    fields: [
+      {
+        name: 'name',
+        label: 'Connection Name',
+        type: 'text',
+        placeholder: 'My Kantata Account',
+        required: true,
+        helpText: 'A friendly name to identify this integration',
+      },
+      {
+        name: 'token',
+        label: 'Personal Access Token',
+        type: 'password',
+        placeholder: 'Your Kantata Personal Access Token',
+        required: true,
+        helpText: 'Generate from: Account Settings > API > Personal Access Tokens',
+      },
+      {
+        name: 'subdomain',
+        label: 'Account Subdomain',
+        type: 'text',
+        placeholder: 'yourcompany',
+        required: true,
+        helpText: 'Your Kantata subdomain (e.g., "yourcompany" from yourcompany.mavenlink.com)',
+      },
+    ],
+  },
 }
 
 export const PLATFORMS = Object.keys(PLATFORM_CONFIGS) as Array<keyof typeof PLATFORM_CONFIGS>
