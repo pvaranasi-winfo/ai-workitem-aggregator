@@ -9,7 +9,7 @@ import { IntegrationCard } from '@/components/integration-card'
 import { AddIntegrationDialog } from '@/components/add-integration-dialog'
 import { ArrowLeft, Plus } from 'lucide-react'
 import { toast } from 'sonner'
-import { Navbar } from '@/components/navbar'
+import { AppHeader } from '@/components/app-header'
 import { Footer } from '@/components/footer'
 
 export default function IntegrationsPage() {
@@ -84,7 +84,7 @@ export default function IntegrationsPage() {
 
   return (
     <div className="min-h-screen flex flex-col">
-      <Navbar email={email} onLogout={handleLogout} />
+      <AppHeader email={email} onLogout={handleLogout} />
       <div className="flex-1 bg-gradient-to-br from-gray-50 to-gray-100">
         <div className="container mx-auto px-4 py-8">
           <div className="mb-8">

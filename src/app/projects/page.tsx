@@ -12,7 +12,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Textarea } from '@/components/ui/textarea';
 import { Plus, Pencil, Trash2, MapPin, Users, Calendar, TrendingUp, Building2 } from 'lucide-react';
 import { toast } from 'sonner';
-import { Navbar } from '@/components/navbar';
+import { AppHeader } from '@/components/app-header';
 import { Footer } from '@/components/footer';
 import { format } from 'date-fns';
 
@@ -186,7 +186,7 @@ export default function ProjectsPage() {
 
   return (
     <div className="min-h-screen flex flex-col">
-      <Navbar email={email} onLogout={handleLogout} />
+      <AppHeader email={email} onLogout={handleLogout} />
       <div className="flex-1 bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
         <div className="container mx-auto px-4 py-8">
         {/* Stats */}

@@ -8,7 +8,8 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Navbar } from '@/components/navbar';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { AppHeader } from '@/components/app-header';
 import { Footer } from '@/components/footer';
 import { 
   User as UserIcon, Clock, Briefcase, Calendar, 
@@ -125,7 +126,7 @@ export default function UserDashboardPage() {
 
   return (
     <div className="min-h-screen flex flex-col">
-      <Navbar email={email} onLogout={handleLogout} />
+      <AppHeader email={email} onLogout={handleLogout} />
 
       {/* Main Content */}
       <div className="flex-1 bg-gradient-to-br from-slate-50 via-indigo-50 to-purple-50">
@@ -178,41 +179,29 @@ export default function UserDashboardPage() {
           </Card>
         </div>
 
-        {/* Filters */}
-        <Card className="mb-6">
-          <CardHeader>
-            <CardTitle>Filters</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <label className="text-sm font-medium mb-2 block">Search</label>
-                <div className="relative">
-                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-                  <Input
-                    placeholder="Search by name, department, job title..."
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    className="pl-10"
-                  />
-                </div>
-              </div>
-              <div>
-                <label className="text-sm font-medium mb-2 block">Resource Type</label>
-                <select
-                  value={filterType}
-                  onChange={(e) => setFilterType(e.target.value)}
-                  className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
-                >
-                  <option value="all">All Types</option>
-                  <option value="Dedicated">Dedicated Resources</option>
-                  <option value="Shared">Shared Resources</option>
-                  <option value="Unassigned">Unassigned</option>
-                </select>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+        {/* Compact Filters */}
+        <div className="flex flex-col sm:flex-row gap-3 mb-6">
+          <div className="relative flex-1">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+            <Input
+              placeholder="Search by name, department, job title..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="pl-10"
+            />
+          </div>
+          <Select value={filterType} onValueChange={setFilterType}>
+            <SelectTrigger className="w-full sm:w-[220px]">
+              <SelectValue placeholder="Filter by type" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Types</SelectItem>
+              <SelectItem value="Dedicated">Dedicated Resources</SelectItem>
+              <SelectItem value="Shared">Shared Resources</SelectItem>
+              <SelectItem value="Unassigned">Unassigned</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
 
         {/* User Tiles */}
         {isLoading ? (

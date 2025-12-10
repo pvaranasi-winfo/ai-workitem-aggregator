@@ -17,11 +17,15 @@ export default function Home() {
     setLoading(true)
 
     try {
-      // For demo: use dummy@example.com to see sample data
-      if (email.toLowerCase() === 'dummy@example.com') {
-        localStorage.setItem('userEmail', 'dummy@example.com')
-        router.push('/dashboard')
-        return
+      // Validate email exists in database via API call
+      const response = await fetch(`/api/auth/validate?email=${encodeURIComponent(email)}`);
+      if (response.ok) {
+        localStorage.setItem('userEmail', email.toLowerCase());
+        router.push('/dashboard');
+        return;
+      } else {
+        alert('User not found. Please contact your administrator.');
+        return;
       }
       
       // Store email in localStorage for demo purposes
@@ -55,7 +59,10 @@ export default function Home() {
             </CardDescription>
             <div className="mt-2 p-3 bg-blue-50 border border-blue-200 rounded-lg">
               <p className="text-xs text-blue-800">
-                <span className="font-semibold">Quick Demo:</span> Use <code className="bg-blue-100 px-1.5 py-0.5 rounded">dummy@example.com</code> to see the dashboard with sample data
+                <span className="font-semibold">Test Accounts:</span><br />
+                Admin: <code className="bg-blue-100 px-1.5 py-0.5 rounded text-xs">admin@company.com</code><br />
+                PM: <code className="bg-blue-100 px-1.5 py-0.5 rounded text-xs">sarah.johnson@company.com</code><br />
+                Employee: <code className="bg-blue-100 px-1.5 py-0.5 rounded text-xs">john.doe@company.com</code>
               </p>
             </div>
           </CardHeader>

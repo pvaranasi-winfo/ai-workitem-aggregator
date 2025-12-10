@@ -6,7 +6,7 @@ import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Navbar } from '@/components/navbar';
+import { AppHeader } from '@/components/app-header';
 import { Footer } from '@/components/footer';
 import { 
   TrendingUp, TrendingDown, Users, Clock, CheckCircle2, 
@@ -114,21 +114,7 @@ export default function KPIDashboardPage() {
 
   return (
     <div className="min-h-screen flex flex-col">
-      <Navbar 
-        email={email} 
-        onLogout={handleLogout}
-        actions={
-          <select
-            value={timeRange}
-            onChange={(e) => setTimeRange(e.target.value as any)}
-            className="text-sm h-9 rounded-md border border-input bg-background px-3"
-          >
-            <option value="week">Week</option>
-            <option value="month">Month</option>
-            <option value="quarter">Quarter</option>
-          </select>
-        }
-      />
+      <AppHeader email={email} onLogout={handleLogout} />
 
       {/* Main Content */}
       <div className="flex-1 bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">

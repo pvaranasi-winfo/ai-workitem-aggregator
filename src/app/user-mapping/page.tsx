@@ -11,7 +11,7 @@ import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Plus, Trash2, Users, Building2, RefreshCw, Settings, UserPlus, Search } from 'lucide-react';
-import { Navbar } from '@/components/navbar';
+import { AppHeader } from '@/components/app-header';
 import { Footer } from '@/components/footer';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
@@ -269,7 +269,7 @@ export default function UserMappingPage() {
 
   return (
     <div className="min-h-screen flex flex-col">
-      <Navbar email={email} onLogout={handleLogout} />
+      <AppHeader email={email} onLogout={handleLogout} />
       
       <div className="flex-1 bg-gradient-to-br from-slate-50 via-purple-50 to-pink-50">
         {/* Main Content */}
@@ -281,51 +281,53 @@ export default function UserMappingPage() {
           </TabsList>
 
           <TabsContent value="mappings" className="space-y-6">
-            {/* Filters and Actions */}
-            <Card>
-              <CardHeader>
-                <CardTitle>Filters & Actions</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  <div>
-                    <Label htmlFor="search">Search</Label>
-                    <div className="relative">
-                      <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-                      <Input
-                        id="search"
-                        placeholder="Search users, projects, roles..."
-                        value={searchQuery}
-                        onChange={(e) => setSearchQuery(e.target.value)}
-                        className="pl-10"
-                      />
-                    </div>
-                  </div>
-                  <div>
-                    <Label htmlFor="project-filter">Filter by Project</Label>
-                    <select
-                      id="project-filter"
-                      value={selectedProject}
-                      onChange={(e) => setSelectedProject(e.target.value)}
-                      className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
-                    >
-                      <option value="">All Projects</option>
-                      {projects?.projects?.map((project: Project) => (
-                        <option key={project.id} value={project.id}>
-                          {project.title}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                  <div className="flex items-end">
-                    <Button onClick={handleOpenDialog} className="w-full gap-2">
-                      <Plus className="h-4 w-4" />
-                      Add Mapping
-                    </Button>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
+            {/* Compact Filters and Actions */}
+            <div className="flex flex-wrap items-center gap-3 bg-white p-4 rounded-lg border shadow-sm">
+              <div className="relative flex-1 min-w-[200px]">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+                <Input
+                  placeholder="Search users, projects, roles..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="pl-10 h-9"
+                />
+              </div>
+
+              <div className="h-6 border-l hidden sm:block" />
+
+              <div className="flex items-center gap-2">
+                <Building2 className="h-4 w-4 text-muted-foreground" />
+                <select
+                  value={selectedProject}
+                  onChange={(e) => setSelectedProject(e.target.value)}
+                  className="h-9 rounded-md border border-input bg-background px-3 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+                >
+                  <option value="">All Projects</option>
+                  {projects?.projects?.map((project: Project) => (
+                    <option key={project.id} value={project.id}>
+                      {project.title}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="flex-1" />
+
+              <div className="flex items-center gap-2">
+                <Button onClick={handleOpenDialog} size="sm" className="gap-2">
+                  <Plus className="h-4 w-4" />
+                  <span className="hidden sm:inline">Add Mapping</span>
+                </Button>
+                <Button onClick={() => syncEntraMutation.mutate()} variant="outline" size="sm" className="gap-2" disabled={syncEntraMutation.isPending}>
+                  <RefreshCw className={`h-4 w-4 ${syncEntraMutation.isPending ? 'animate-spin' : ''}`} />
+                  <span className="hidden md:inline">Sync Users</span>
+                </Button>
+                <Button onClick={() => setShowEntraConfig(true)} variant="outline" size="sm" className="gap-2">
+                  <Settings className="h-4 w-4" />
+                  <span className="hidden md:inline">Entra ID</span>
+                </Button>
+              </div>
+            </div>
 
             {/* Stats */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">

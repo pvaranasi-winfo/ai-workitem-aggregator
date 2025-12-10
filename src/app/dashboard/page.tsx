@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
@@ -11,8 +11,9 @@ import { AddIntegrationDialog } from '@/components/add-integration-dialog';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
-import { Navbar } from '@/components/navbar';
+import { AppHeader } from '@/components/app-header';
 import { Footer } from '@/components/footer';
+import { useUser } from '@/hooks/useUser';
 import { 
   RefreshCw, Plus, Settings, Search, 
   CheckCircle2, Clock, Target, Timer, BarChart3, 
@@ -21,21 +22,14 @@ import {
 import { toast } from 'sonner';
 
 export default function DashboardPage() {
-  const [email, setEmail] = useState('');
+  const { user, loading: userLoading, logout } = useUser();
   const [showAddDialog, setShowAddDialog] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedPlatform, setSelectedPlatform] = useState<string>('all');
   const router = useRouter();
   const queryClient = useQueryClient();
 
-  useEffect(() => {
-    const storedEmail = localStorage.getItem('userEmail');
-    if (!storedEmail) {
-      router.push('/');
-    } else {
-      setEmail(storedEmail);
-    }
-  }, [router]);
+  const email = user?.email || '';
 
   const { data: dashboardData, isLoading: dashboardLoading } = useQuery({
     queryKey: ['dashboard', email],
@@ -83,11 +77,6 @@ export default function DashboardPage() {
       toast.error(error.message);
     },
   });
-
-  const handleLogout = () => {
-    localStorage.removeItem('userEmail');
-    router.push('/');
-  };
 
   const stats = dashboardData?.stats;
   const tickets = ticketsData?.tickets || [];
@@ -149,32 +138,11 @@ export default function DashboardPage() {
 
   const platforms = ['all', 'jira', 'github', 'gitlab', 'azure-devops', 'bitbucket'];
 
-  if (!email) return null;
+  if (userLoading || !user) return null;
 
   return (
     <div className="min-h-screen flex flex-col">
-      <Navbar 
-        email={email} 
-        onLogout={handleLogout}
-        actions={
-          <>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => syncMutation.mutate()}
-              disabled={syncMutation.isPending}
-              className="gap-1.5"
-            >
-              <RefreshCw className={`h-4 w-4 ${syncMutation.isPending ? 'animate-spin' : ''}`} />
-              <span className="hidden sm:inline">Sync</span>
-            </Button>
-            <Button variant="outline" size="sm" onClick={() => setShowAddDialog(true)} className="gap-1.5">
-              <Plus className="h-4 w-4" />
-              <span className="hidden sm:inline">Add</span>
-            </Button>
-          </>
-        }
-      />
+      <AppHeader email={user.email} role={user.role} onLogout={logout} />
 
       <div className="flex-1 bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
         <div className="container mx-auto px-4 py-8">

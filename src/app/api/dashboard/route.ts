@@ -13,31 +13,6 @@ export async function GET(request: NextRequest) {
       )
     }
 
-    // Return dummy data for demonstration
-    if (email === 'dummy@example.com') {
-      return NextResponse.json({
-        stats: {
-          totalTickets: 10,
-          activeIntegrations: 5,
-          ticketsByStatus: {
-            'To Do': 3,
-            'In Progress': 4,
-            'In Review': 1,
-            'Done': 2,
-            inProgress: 4,
-            completed: 2,
-          },
-          ticketsByPlatform: {
-            jira: 3,
-            github: 3,
-            gitlab: 2,
-            'azure-devops': 1,
-            bitbucket: 1,
-          },
-        },
-      });
-    }
-
     const user = await prisma.user.findUnique({
       where: { email },
       include: {

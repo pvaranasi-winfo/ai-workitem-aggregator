@@ -12,7 +12,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Textarea } from '@/components/ui/textarea';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Plus, Trash2, Calendar, RefreshCw, Users, Building2, Download } from 'lucide-react';
-import { Navbar } from '@/components/navbar';
+import { AppHeader } from '@/components/app-header';
 import { Footer } from '@/components/footer';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
@@ -48,6 +48,8 @@ export default function LeaveManagementPage() {
   const [showSourceDialog, setShowSourceDialog] = useState(false);
   const [filterUser, setFilterUser] = useState('');
   const [filterStatus, setFilterStatus] = useState('all');
+  const [filterLeaveType, setFilterLeaveType] = useState('all');
+  const [searchQuery, setSearchQuery] = useState('');
   const [formData, setFormData] = useState({
     userId: '',
     leaveType: 'Annual',
@@ -214,7 +216,7 @@ export default function LeaveManagementPage() {
 
   return (
     <div className="min-h-screen flex flex-col">
-      <Navbar email={email} onLogout={handleLogout} />
+      <AppHeader email={email} onLogout={handleLogout} />
       <div className="flex-1 bg-gradient-to-br from-slate-50 via-orange-50 to-red-50">
         <div className="container mx-auto px-4 py-8">
         {/* Stats */}
@@ -265,75 +267,119 @@ export default function LeaveManagementPage() {
           </Card>
         </div>
 
-        {/* Filters and Actions */}
-        <Card className="mb-6">
-          <CardHeader>
-            <CardTitle>Filters & Actions</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div>
-                <Label htmlFor="user-filter">Filter by User</Label>
-                <select
-                  id="user-filter"
-                  value={filterUser}
-                  onChange={(e) => setFilterUser(e.target.value)}
-                  className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
-                >
-                  <option value="">All Users</option>
-                  {users?.users?.map((user: any) => (
-                    <option key={user.id} value={user.id}>
-                      {user.displayName || user.name || user.email}
-                    </option>
-                  ))}
-                </select>
-              </div>
-              <div>
-                <Label htmlFor="status-filter">Filter by Status</Label>
-                <select
-                  id="status-filter"
-                  value={filterStatus}
-                  onChange={(e) => setFilterStatus(e.target.value)}
-                  className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
-                >
-                  <option value="all">All Status</option>
-                  <option value="Approved">Approved</option>
-                  <option value="Pending">Pending</option>
-                  <option value="Rejected">Rejected</option>
-                </select>
-              </div>
-              <div className="flex items-end">
-                <Button onClick={handleOpenDialog} className="w-full gap-2">
-                  <Plus className="h-4 w-4" />
-                  Add Leave
-                </Button>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+        {/* Compact Filters and Actions */}
+        <div className="mb-6 flex flex-wrap items-center gap-3 bg-white p-4 rounded-lg border shadow-sm">
+          <div className="flex items-center gap-2">
+            <Users className="h-4 w-4 text-muted-foreground" />
+            <select
+              value={filterUser}
+              onChange={(e) => setFilterUser(e.target.value)}
+              className="h-9 rounded-md border border-input bg-background px-3 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+            >
+              <option value="">All Users</option>
+              {users?.users?.map((user: any) => (
+                <option key={user.id} value={user.id}>
+                  {user.displayName || user.name || user.email}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <div className="h-6 border-l hidden sm:block" />
+
+          <div className="flex items-center gap-2">
+            <Building2 className="h-4 w-4 text-muted-foreground" />
+            <select
+              value={filterStatus}
+              onChange={(e) => setFilterStatus(e.target.value)}
+              className="h-9 rounded-md border border-input bg-background px-3 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+            >
+              <option value="all">All Status</option>
+              <option value="Approved">Approved</option>
+              <option value="Pending">Pending</option>
+              <option value="Rejected">Rejected</option>
+            </select>
+          </div>
+
+          <div className="h-6 border-l hidden sm:block" />
+
+          <div className="flex items-center gap-2">
+            <Calendar className="h-4 w-4 text-muted-foreground" />
+            <select
+              value={filterLeaveType}
+              onChange={(e) => setFilterLeaveType(e.target.value)}
+              className="h-9 rounded-md border border-input bg-background px-3 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+            >
+              <option value="all">All Types</option>
+              <option value="Annual">Annual</option>
+              <option value="Sick">Sick</option>
+              <option value="Personal">Personal</option>
+              <option value="Parental">Parental</option>
+              <option value="Other">Other</option>
+            </select>
+          </div>
+
+          <div className="flex-1" />
+
+          <div className="flex items-center gap-2">
+            <Button onClick={handleOpenDialog} size="sm" className="gap-2">
+              <Plus className="h-4 w-4" />
+              <span className="hidden sm:inline">Add Leave</span>
+            </Button>
+            <Button onClick={() => setShowSourceDialog(true)} variant="outline" size="sm" className="gap-2">
+              <RefreshCw className="h-4 w-4" />
+              <span className="hidden md:inline">Sync</span>
+            </Button>
+            <Button variant="outline" size="sm" className="gap-2">
+              <Download className="h-4 w-4" />
+              <span className="hidden md:inline">Export</span>
+            </Button>
+          </div>
+        </div>
 
         {/* Leaves Table */}
         {isLoading ? (
           <div className="text-center py-12">Loading leaves...</div>
-        ) : leaves?.leaves?.length === 0 ? (
-          <Card>
-            <CardContent className="py-12">
-              <div className="text-center">
-                <Calendar className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                <h3 className="text-lg font-semibold mb-2">No leave records found</h3>
-                <p className="text-muted-foreground mb-4">Start by adding leave records or syncing from external sources</p>
-                <Button onClick={handleOpenDialog} className="gap-2">
-                  <Plus className="h-4 w-4" />
-                  Add Leave
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-        ) : (
+        ) : (() => {
+          const filteredLeaves = leaves?.leaves?.filter((leave: Leave) => {
+            const matchesType = filterLeaveType === 'all' || leave.leaveType === filterLeaveType;
+            const matchesUser = !filterUser || leave.userId === filterUser;
+            const matchesStatus = filterStatus === 'all' || leave.status === filterStatus;
+            const matchesSearch = !searchQuery || 
+              leave.user.displayName?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+              leave.user.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+              leave.user.email?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+              leave.leaveType?.toLowerCase().includes(searchQuery.toLowerCase());
+            return matchesType && matchesUser && matchesStatus && matchesSearch;
+          }) || [];
+
+          return filteredLeaves.length === 0 ? (
+            <Card>
+              <CardContent className="py-12">
+                <div className="text-center">
+                  <Calendar className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                  <h3 className="text-lg font-semibold mb-2">No leave records found</h3>
+                  <p className="text-muted-foreground mb-4">
+                    {leaves?.leaves?.length === 0 
+                      ? 'Start by adding leave records or syncing from external sources'
+                      : 'No records match your filter criteria'}
+                  </p>
+                  <Button onClick={handleOpenDialog} className="gap-2">
+                    <Plus className="h-4 w-4" />
+                    Add Leave
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          ) : (
           <Card>
             <CardHeader>
-              <CardTitle>Leave Records</CardTitle>
-              <CardDescription>Manage employee leave and time off</CardDescription>
+              <div className="flex items-center justify-between">
+                <div>
+                  <CardTitle>Leave Records</CardTitle>
+                  <CardDescription>Showing {filteredLeaves.length} of {leaves?.leaves?.length || 0} records</CardDescription>
+                </div>
+              </div>
             </CardHeader>
             <CardContent>
               <div className="overflow-x-auto">
@@ -351,7 +397,7 @@ export default function LeaveManagementPage() {
                     </tr>
                   </thead>
                   <tbody>
-                    {leaves?.leaves?.map((leave: Leave) => (
+                    {filteredLeaves.map((leave: Leave) => (
                       <tr key={leave.id} className="border-b hover:bg-gray-50">
                         <td className="py-3 px-4">
                           <div>
@@ -412,7 +458,8 @@ export default function LeaveManagementPage() {
               </div>
             </CardContent>
           </Card>
-        )}
+          );
+        })()}
 
         {/* Add Leave Dialog */}
         <Dialog open={showDialog} onOpenChange={setShowDialog}>

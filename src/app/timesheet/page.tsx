@@ -13,12 +13,13 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { Checkbox } from '@/components/ui/checkbox';
 import { Textarea } from '@/components/ui/textarea';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { CalendarIcon, Clock, Save, Plus, Trash2, AlertCircle, CheckCircle2, Search } from 'lucide-react';
-import { format, isAfter, isBefore, startOfDay, endOfDay } from 'date-fns';
+import { CalendarIcon, Clock, Save, Plus, Trash2, AlertCircle, CheckCircle2, Search, CalendarDays } from 'lucide-react';
+import { format, isAfter, isBefore, startOfDay, endOfDay, startOfWeek, endOfWeek, addDays, eachDayOfInterval } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
-import { Navbar } from '@/components/navbar';
+import { AppHeader } from '@/components/app-header';
 import { Footer } from '@/components/footer';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 interface TimeEntry {
   id?: string;
@@ -27,6 +28,15 @@ interface TimeEntry {
   ticketExternalId: string;
   platform: string;
   hours: number;
+  description: string;
+}
+
+interface WeeklyEntry {
+  ticketId: string;
+  ticketTitle: string;
+  ticketExternalId: string;
+  platform: string;
+  dailyHours: { [date: string]: number };
   description: string;
 }
 
@@ -39,6 +49,9 @@ export default function TimesheetPage() {
   const [showTicketDialog, setShowTicketDialog] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedTickets, setSelectedTickets] = useState<string[]>([]);
+  const [viewMode, setViewMode] = useState<'daily' | 'weekly'>('daily');
+  const [weeklyEntries, setWeeklyEntries] = useState<WeeklyEntry[]>([]);
+  const [selectedWeekStart, setSelectedWeekStart] = useState<Date>(startOfWeek(new Date(), { weekStartsOn: 1 }));
   const router = useRouter();
   const queryClient = useQueryClient();
 
@@ -242,6 +255,132 @@ export default function TimesheetPage() {
 
   const totalHours = timeEntries.reduce((sum, entry) => sum + (entry.hours || 0), 0);
 
+  // Weekly view functions
+  const weekDays = eachDayOfInterval({
+    start: selectedWeekStart,
+    end: endOfWeek(selectedWeekStart, { weekStartsOn: 1 })
+  });
+
+  const handleAddWeeklyTicket = () => {
+    setViewMode('weekly');
+    setShowTicketDialog(true);
+    setSelectedTickets([]);
+    setSearchQuery('');
+  };
+
+  const handleAddSelectedTicketsWeekly = () => {
+    if (selectedTickets.length === 0) {
+      toast.error('Please select at least one ticket');
+      return;
+    }
+
+    const tickets = allTickets?.tickets || [];
+    const newEntries: WeeklyEntry[] = selectedTickets.map(ticketId => {
+      const ticket = tickets.find((t: any) => t.id === ticketId);
+      const dailyHours: { [date: string]: number } = {};
+      weekDays.forEach(day => {
+        dailyHours[format(day, 'yyyy-MM-dd')] = 0;
+      });
+      return {
+        ticketId: ticket.id,
+        ticketTitle: ticket.title,
+        ticketExternalId: ticket.externalId,
+        platform: ticket.platform,
+        dailyHours,
+        description: '',
+      };
+    });
+
+    const existingTicketIds = weeklyEntries.map(e => e.ticketId);
+    const uniqueNewEntries = newEntries.filter(e => !existingTicketIds.includes(e.ticketId));
+
+    if (uniqueNewEntries.length === 0) {
+      toast.error('All selected tickets are already added');
+      return;
+    }
+
+    setWeeklyEntries(prev => [...prev, ...uniqueNewEntries]);
+    setShowTicketDialog(false);
+    setSelectedTickets([]);
+    setSearchQuery('');
+    toast.success(`Added ${uniqueNewEntries.length} ticket(s) to weekly timesheet`);
+  };
+
+  const handleUpdateWeeklyEntry = (index: number, date: string, hours: number) => {
+    setWeeklyEntries(prev => {
+      const updated = [...prev];
+      updated[index].dailyHours[date] = hours;
+      return updated;
+    });
+  };
+
+  const handleRemoveWeeklyEntry = (index: number) => {
+    setWeeklyEntries(prev => prev.filter((_, i) => i !== index));
+  };
+
+  const handleSaveWeekly = async () => {
+    const allEntries: any[] = [];
+    
+    weeklyEntries.forEach(entry => {
+      Object.entries(entry.dailyHours).forEach(([date, hours]) => {
+        if (hours > 0) {
+          allEntries.push({
+            ticketId: entry.ticketId,
+            ticketTitle: entry.ticketTitle,
+            ticketExternalId: entry.ticketExternalId,
+            platform: entry.platform,
+            hours,
+            description: entry.description,
+            date,
+          });
+        }
+      });
+    });
+
+    if (allEntries.length === 0) {
+      toast.error('Please enter hours for at least one day');
+      return;
+    }
+
+    try {
+      for (const entry of allEntries) {
+        const res = await fetch('/api/timesheet', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            email,
+            date: entry.date,
+            entries: [{
+              ticketId: entry.ticketId,
+              hours: entry.hours,
+              description: entry.description,
+            }],
+          }),
+        });
+
+        if (!res.ok) throw new Error('Failed to save entry');
+      }
+
+      toast.success('Weekly timesheet saved successfully!');
+      queryClient.invalidateQueries({ queryKey: ['time-entries'] });
+      queryClient.invalidateQueries({ queryKey: ['tickets'] });
+      queryClient.invalidateQueries({ queryKey: ['dashboard'] });
+      setWeeklyEntries([]);
+    } catch (error: any) {
+      toast.error(error.message);
+    }
+  };
+
+  const getWeeklyTotalHours = () => {
+    return weeklyEntries.reduce((total, entry) => {
+      return total + Object.values(entry.dailyHours).reduce((sum, hours) => sum + hours, 0);
+    }, 0);
+  };
+
+  const getDailyTotal = (date: string) => {
+    return weeklyEntries.reduce((sum, entry) => sum + (entry.dailyHours[date] || 0), 0);
+  };
+
   const handleLogout = () => {
     localStorage.removeItem('userEmail');
     router.push('/');
@@ -251,11 +390,26 @@ export default function TimesheetPage() {
 
   return (
     <div className="min-h-screen flex flex-col">
-      <Navbar email={email} onLogout={handleLogout} />
+      <AppHeader email={email} onLogout={handleLogout} />
       <div className="flex-1 bg-gradient-to-br from-slate-50 via-purple-50 to-pink-50">
         <div className="container mx-auto px-4 py-8">
+          
+          <Tabs value={viewMode} onValueChange={(v) => setViewMode(v as 'daily' | 'weekly')} className="space-y-6">
+            <TabsList className="grid w-full max-w-md grid-cols-2">
+              <TabsTrigger value="daily" className="gap-2">
+                <CalendarIcon className="h-4 w-4" />
+                Daily View
+              </TabsTrigger>
+              <TabsTrigger value="weekly" className="gap-2">
+                <CalendarDays className="h-4 w-4" />
+                Weekly View
+              </TabsTrigger>
+            </TabsList>
+
+            {/* DAILY VIEW */}
+            <TabsContent value="daily" className="space-y-6">
           {/* Date Selection */}
-          <Card className="mb-6">
+          <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <CalendarIcon className="h-5 w-5 text-purple-600" />
@@ -349,8 +503,8 @@ export default function TimesheetPage() {
           </Card>
         )}
 
-        {/* Time Entries Form */}
-        {(confirmedAutoFill || isPastDate || showManualEntry) && (
+        {/* Time Entries Form - Always show for today or if confirmed */}
+        {(isToday || confirmedAutoFill || isPastDate || showManualEntry) && (
           <Card>
             <CardHeader>
               <div className="flex items-center justify-between">
@@ -498,6 +652,180 @@ export default function TimesheetPage() {
             </CardContent>
           </Card>
         )}
+        </TabsContent>
+
+        {/* WEEKLY VIEW */}
+        <TabsContent value="weekly" className="space-y-6">
+          <Card>
+            <CardHeader>
+              <div className="flex items-center justify-between">
+                <div>
+                  <CardTitle className="flex items-center gap-2">
+                    <CalendarDays className="h-5 w-5 text-purple-600" />
+                    Week Timesheet
+                  </CardTitle>
+                  <CardDescription>
+                    Week of {format(selectedWeekStart, 'MMM dd')} - {format(endOfWeek(selectedWeekStart, { weekStartsOn: 1 }), 'MMM dd, yyyy')}
+                  </CardDescription>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setSelectedWeekStart(addDays(selectedWeekStart, -7))}
+                  >
+                    ← Prev Week
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setSelectedWeekStart(startOfWeek(new Date(), { weekStartsOn: 1 }))}
+                  >
+                    This Week
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setSelectedWeekStart(addDays(selectedWeekStart, 7))}
+                    disabled={isAfter(addDays(selectedWeekStart, 7), today)}
+                  >
+                    Next Week →
+                  </Button>
+                </div>
+              </div>
+            </CardHeader>
+            <CardContent>
+              {weeklyEntries.length === 0 ? (
+                <div className="text-center py-12">
+                  <CalendarDays className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                  <p className="text-gray-600 mb-4">No tickets added to weekly timesheet</p>
+                  <Button onClick={handleAddWeeklyTicket} className="gap-2">
+                    <Plus className="h-4 w-4" />
+                    Add Tickets
+                  </Button>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {/* Weekly Timesheet Table */}
+                  <div className="overflow-x-auto">
+                    <table className="w-full border-collapse">
+                      <thead>
+                        <tr className="border-b-2">
+                          <th className="text-left py-3 px-4 font-medium min-w-[250px]">Ticket</th>
+                          {weekDays.map(day => (
+                            <th key={format(day, 'yyyy-MM-dd')} className="text-center py-3 px-2 font-medium min-w-[80px]">
+                              <div className="text-xs text-gray-600">{format(day, 'EEE')}</div>
+                              <div className="text-sm">{format(day, 'MMM dd')}</div>
+                            </th>
+                          ))}
+                          <th className="text-center py-3 px-4 font-medium min-w-[80px]">Total</th>
+                          <th className="text-right py-3 px-4 font-medium min-w-[60px]">Action</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {weeklyEntries.map((entry, index) => (
+                          <tr key={index} className="border-b hover:bg-gray-50">
+                            <td className="py-3 px-4">
+                              <div className="flex items-center gap-2 mb-1">
+                                <Badge variant="outline" className="text-xs">{entry.platform}</Badge>
+                                <span className="text-xs font-mono text-gray-600">{entry.ticketExternalId}</span>
+                              </div>
+                              <div className="font-medium text-sm">{entry.ticketTitle}</div>
+                            </td>
+                            {weekDays.map(day => {
+                              const dateKey = format(day, 'yyyy-MM-dd');
+                              return (
+                                <td key={dateKey} className="py-3 px-2 text-center">
+                                  <Input
+                                    type="number"
+                                    min="0"
+                                    max="24"
+                                    step="0.5"
+                                    value={entry.dailyHours[dateKey] || ''}
+                                    onChange={(e) => handleUpdateWeeklyEntry(index, dateKey, parseFloat(e.target.value) || 0)}
+                                    className="w-16 text-center text-sm"
+                                    placeholder="0"
+                                  />
+                                </td>
+                              );
+                            })}
+                            <td className="py-3 px-4 text-center">
+                              <Badge variant="secondary" className="font-semibold">
+                                {Object.values(entry.dailyHours).reduce((sum, h) => sum + h, 0).toFixed(1)}h
+                              </Badge>
+                            </td>
+                            <td className="py-3 px-4 text-right">
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => handleRemoveWeeklyEntry(index)}
+                                className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            </td>
+                          </tr>
+                        ))}
+                        {/* Daily Totals Row */}
+                        <tr className="bg-purple-50 font-semibold border-t-2">
+                          <td className="py-3 px-4">Daily Totals</td>
+                          {weekDays.map(day => {
+                            const dateKey = format(day, 'yyyy-MM-dd');
+                            const total = getDailyTotal(dateKey);
+                            return (
+                              <td key={dateKey} className="py-3 px-2 text-center">
+                                <Badge variant={total > 8 ? 'destructive' : total > 0 ? 'default' : 'outline'}>
+                                  {total.toFixed(1)}h
+                                </Badge>
+                              </td>
+                            );
+                          })}
+                          <td className="py-3 px-4 text-center">
+                            <Badge className="font-bold text-base">
+                              {getWeeklyTotalHours().toFixed(1)}h
+                            </Badge>
+                          </td>
+                          <td></td>
+                        </tr>
+                      </tbody>
+                    </table>
+                  </div>
+
+                  {/* Actions */}
+                  <div className="flex items-center justify-between pt-4">
+                    <Button
+                      variant="outline"
+                      onClick={handleAddWeeklyTicket}
+                      className="gap-2"
+                    >
+                      <Plus className="h-4 w-4" />
+                      Add More Tickets
+                    </Button>
+                    <div className="flex gap-3">
+                      <Button
+                        variant="outline"
+                        onClick={() => {
+                          setWeeklyEntries([]);
+                        }}
+                      >
+                        Reset
+                      </Button>
+                      <Button
+                        onClick={handleSaveWeekly}
+                        disabled={getWeeklyTotalHours() === 0}
+                        className="gap-2 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700"
+                      >
+                        <Save className="h-4 w-4" />
+                        Save Week Timesheet
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+      </Tabs>
 
         {/* Ticket Selection Dialog */}
         <Dialog open={showTicketDialog} onOpenChange={setShowTicketDialog}>
@@ -505,7 +833,10 @@ export default function TimesheetPage() {
             <DialogHeader>
               <DialogTitle>Select Tickets</DialogTitle>
               <DialogDescription>
-                Choose tickets to add to your timesheet for {format(selectedDate, 'MMMM dd, yyyy')}
+                {viewMode === 'daily' 
+                  ? `Choose tickets to add to your timesheet for ${format(selectedDate, 'MMMM dd, yyyy')}`
+                  : `Choose tickets to add to your weekly timesheet`
+                }
               </DialogDescription>
             </DialogHeader>
 
@@ -612,7 +943,7 @@ export default function TimesheetPage() {
                 Cancel
               </Button>
               <Button
-                onClick={handleAddSelectedTickets}
+                onClick={viewMode === 'daily' ? handleAddSelectedTickets : handleAddSelectedTicketsWeekly}
                 disabled={selectedTickets.length === 0}
                 className="gap-2"
               >
